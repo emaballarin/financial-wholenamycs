@@ -35,4 +35,9 @@ Given the relative novelty of such experimentation, expected results are hard to
 
 ### Minimal Bibliography
 
-To be filled.
+(Sketch of links just to have an idea of the main papers at our disposal)
+
+- Transformer for time-series:  https://papers.nips.cc/paper/2019/file/6775a0635c302542da2c32aa19d86be0-Paper.pdf
+- FFT speed-up:  https://arxiv.org/abs/2105.03824
+- Reformer:  https://arxiv.org/abs/2001.04451
+- Linformer:  https://arxiv.org/abs/2006.04768
