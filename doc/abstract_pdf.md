@@ -1,14 +1,13 @@
-# Whole-system multidimensional financial time-series modeling from mostly-homogeneous data
+---
+title: "Whole-system multidimensional financial time-series modeling from mostly-homogeneous data"
+author: Davide Roznowicz, Emanuele Ballarin
+geometry: "top=2cm,bottom=2cm"
+---
 
-### Davide Roznowicz and [Emanuele Ballarin](https://ballarin.cc)
+<br>
+<br>
 
-#### [University of Trieste](https://units.it) and [SISSA](https://sissa.it)
-
-</br>
-
-## *Long abstract*
-
-### Context
+### Introduction
 
 Since their very inception, financial markets have always drawn the interest and efforts of *modeling professionals* due to the obvious economic appeal they exhibit. Soon, in addition to *material goals*, their more abstract and academic study began being driven by the still ongoing endavour to prove or disprove their learnability via *statistically-learning machines*.  
 
@@ -16,7 +15,9 @@ The many different scales (micro- and macro-economic, and everything in between)
 
 Of those many models proposed to date, the most common category attacks the problem of predicting the time-dependent evolution of prices (or functions thereof) of tradeable items (e.g. currencies, commodities, stock shares) phenomenologically, via both classical statistical tools tailored toward time series modeling and *deep learning based* approaches. In any case, being the system extremely complex, given the lack of widely established *physical laws* governing it and the etherogeneity of their agents' motives, its very nature calls for following the most *holistic* and *data-driven* modeling approach possible.
 
-### Proposal (a.k.a. *short abstract*)
+\pagebreak
+
+### Abstract
 
 In our work we assess the feasibility, and produce a *proof of concept* implementation, of a *deep-learning-based* *end-to-end* system to predict or simulate multidimensional mostly-homogeneous financial time-series data with associated uncertainty quantification. The main focus will be on US stock shares prices.  
 
@@ -38,7 +39,10 @@ Driven by genuine curiosity for *the new*, and in an attempt to slightly tighten
 
 Given the relative novelty of such experimentation, expected results are hard to figure at this time, being open to the widest variability in outcomes. Our optimistic hope is that such work could help to shed some fleeble light on the nature of the learnability of a financial system and to suggest potential paths to tread (or not to!) for its modeling with cutting edge deep learning technologies.
 
-### Minimal Bibliography
+<br>
+<br>
+
+#### Minimal Bibliography
 
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (Vaswani, et al., 2017)
 
