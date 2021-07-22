@@ -74,8 +74,9 @@ model = StockTransformerModel(A, B, C, D, E, F, G)
 if not ACCELERATOR:
     device = th.device("cuda" if th.cuda.is_available() and AUTODETECT else "cpu")
     model = model.to(device)
-    accelerator=None
+    accelerator = None
 else:
+    device = None
     accelerator = Accelerator()
 
 criterion = MSELoss(reduce=True)
