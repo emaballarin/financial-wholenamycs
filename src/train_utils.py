@@ -24,6 +24,7 @@ def train_epoch(
     print_every_nep,
     train_acc_avgmeter,
     inner_scheduler=None,
+    accelerator=None,
     quiet=False,
 ):
     train_acc_avgmeter.reset()
@@ -34,11 +35,16 @@ def train_epoch(
         data, target_ = batched_datapoint
         target = th.flatten(target_, start_dim=2, end_dim=3).transpose(-1, -2)
 
-        data, target = data.to(device), target.to(device)
+        if accelerator is None:
+            data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
         loss = loss_fn(output, target)
-        loss.backward()
+
+        if accelerator is None:
+            loss.backward()
+        else:
+            accelerator.backward(loss)
 
         optimizer.step()
         if inner_scheduler is not None:

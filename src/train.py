@@ -23,6 +23,8 @@ from ebtorch.logging import AverageMeter
 
 from train_utils import train_epoch
 
+from accelerate import Accelerator
+
 # DATA:
 train_loader, test_loader, _, data_props = stock_dataloader_dispatcher(
     data_path="../data/",
@@ -64,15 +66,27 @@ G = data_props.fin_size
 ################################################################################
 
 nrepochs = 2
+ACCELERATOR: bool = False
 AUTODETECT: bool = True
-device = th.device("cuda" if th.cuda.is_available() and AUTODETECT else "cpu")
-model = StockTransformerModel(A, B, C, D, E, F, G).to(device)
+
+model = StockTransformerModel(A, B, C, D, E, F, G)
+
+if not ACCELERATOR:
+    device = th.device("cuda" if th.cuda.is_available() and AUTODETECT else "cpu")
+    model = model.to(device)
+    accelerator=None
+else:
+    accelerator = Accelerator()
+
 criterion = MSELoss(reduce=True)
 optimizer = RAdam(model.parameters())
 train_acc_avgmeter = AverageMeter("Training Loss")
 # base_optimizer = MadGrad(model.parameters(), lr=0.00017)
 # optimizer = Lookahead(base_optimizer, la_steps=4)
 # scheduler = MultiStepLR(optimizer, milestones=[10, 11], gamma=0.4)
+
+if ACCELERATOR:
+    model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
 ################################################################################
 
@@ -91,6 +105,7 @@ for epoch in range(1, nrepochs + 1):
         print_every_nep=1,
         train_acc_avgmeter=train_acc_avgmeter,
         inner_scheduler=None,
+        accelerator=accelerator,
         quiet=False,
     )
 
