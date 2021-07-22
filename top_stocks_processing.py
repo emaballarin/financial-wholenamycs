@@ -236,5 +236,11 @@ if __name__ == "__main__":
 
     write_on_csv(name_of_stock_csv, header, list_of_list)
 
+    reader=read_from_csv(name_of_stock_csv)
+    reader=reader.drop(labels='ticker', axis=1)
+    reader=reader.to_numpy(copy=True)
+    np.save("financials.npy", reader, allow_pickle=False)
+
+
 
     emit_sound()  # emits sound when the program is completed

@@ -1,4 +1,4 @@
-from top_stocks_processing import get_real_date, find_beginning, fill_the_gap, get_returns, remove_first_date, fill_not_listed, write_on_csv
+from top_stocks_processing import read_from_csv, get_real_date, find_beginning, fill_the_gap, get_returns, remove_first_date, fill_not_listed, write_on_csv
 import yfinance as yf
 import numpy as np
 import datetime
@@ -173,3 +173,8 @@ if __name__ == "__main__":
 
     ############# NOW CSV WRITE
     write_on_csv(name_of_stock_csv, header, list_of_list)
+
+    reader=read_from_csv(name_of_stock_csv)
+    reader=reader.drop(labels='ticker', axis=1)
+    reader=reader.to_numpy(copy=True)
+    np.save("contextual.npy", reader, allow_pickle=False)
