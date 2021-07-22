@@ -16,8 +16,7 @@ import torch as th
 from torch import nn
 from torch.nn import TransformerEncoderLayer, TransformerEncoder
 
-from ebtorch import nn as ebnn
-from ebtorch.nn import FCBlock
+from ebtorch.nn import FCBlock, CausalConv1d
 from ebtorch.nn.utils import argser_f
 
 # Typing
@@ -135,7 +134,7 @@ class ConvFeaturizer1d(nn.Module):
 
             if causal[conv_idx]:
                 self.conv_battery.append(
-                    ebnn.CausalConv1d(
+                    CausalConv1d(
                         in_channels=in_channels[conv_idx],
                         out_channels=out_channels[conv_idx],
                         kernel_size=kernel_size[conv_idx],
