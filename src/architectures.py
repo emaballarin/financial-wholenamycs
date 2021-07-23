@@ -3,8 +3,8 @@
 
 # ============================================================================ #
 # Part of:
-# "Whole-system multidimensional financial time series prediction and simulation
-# from timestamped prices only"
+# "The Stock Transformer: whole-system multidimensional financial time series
+# forecasting from timestamped prices via stacked self-attention"
 #
 # Davide Roznowicz, Emanuele Ballarin <emanuele@ballarin.cc>
 #
@@ -244,9 +244,6 @@ class StockTransformerModel(nn.Module):
         # Useful parameters
         self.ctx_size = ctx_size
         self.fin_size = fin_size
-
-        # Precompute constants
-        # TODO?
 
         # Blocks
         self.conv_featurizer = argser_f(ConvFeaturizer, conv_featurizer_args)()

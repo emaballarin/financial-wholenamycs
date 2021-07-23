@@ -3,8 +3,8 @@
 
 # ============================================================================ #
 # Part of:
-# "Whole-system multidimensional financial time series prediction and simulation
-# from timestamped prices only"
+# "The Stock Transformer: whole-system multidimensional financial time series
+# forecasting from timestamped prices via stacked self-attention"
 #
 # Davide Roznowicz, Emanuele Ballarin <emanuele@ballarin.cc>
 #
@@ -60,13 +60,10 @@ E = [([20 * 6, 10], 15)]
 F = data_props.ctx_size
 G = data_props.fin_size
 
-# MODEL:
-
-
 ################################################################################
 
 nrepochs = 2
-ACCELERATOR: bool = False
+ACCELERATOR: bool = True
 AUTODETECT: bool = True
 
 model = StockTransformerModel(A, B, C, D, E, F, G)
@@ -80,10 +77,12 @@ else:
     accelerator = Accelerator()
 
 criterion = MSELoss(reduce=True)
-optimizer = RAdam(model.parameters())
+optimizer = RAdam(model.parameters())   # rl, mom?, betas??
 train_acc_avgmeter = AverageMeter("Training Loss")
-# base_optimizer = MadGrad(model.parameters(), lr=0.00017)
-# optimizer = Lookahead(base_optimizer, la_steps=4)
+
+base_optimizer = optimizer
+optimizer = Lookahead(base_optimizer)   # la_steps? (e.g. 5->4)
+
 # scheduler = MultiStepLR(optimizer, milestones=[10, 11], gamma=0.4)
 
 if ACCELERATOR:
@@ -110,20 +109,22 @@ for epoch in range(1, nrepochs + 1):
         quiet=False,
     )
 
-    # Tweaks for the Lookahead optimizer (before testing)
-    if isinstance(optimizer, Lookahead):
-        optimizer._backup_and_load_cache()
+    # # Tweaks for the Lookahead optimizer (before testing)
+    # if isinstance(optimizer, Lookahead):
+    #     optimizer._backup_and_load_cache()
 
     # Testing: on training and testing set
+    #    print("TESTING...")
     #    print("\nON TRAINING SET:")
     #    _ = test(model, device, test_on_train_loader, lossfn, quiet=False)
     #    print("\nON TEST SET:")
     #    _ = test(model, device, test_loader, lossfn, quiet=False)
     #    print("\n\n")
 
-    # Tweaks for the Lookahead optimizer (after testing)
-    if isinstance(optimizer, Lookahead):
-        optimizer._clear_and_load_backup()
+    # # Tweaks for the Lookahead optimizer (after testing)
+    # if isinstance(optimizer, Lookahead):
+    #     optimizer._clear_and_load_backup()
 
     # Scheduling step (outer)
     # scheduler.step()
+ 

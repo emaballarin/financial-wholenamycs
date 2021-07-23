@@ -3,8 +3,8 @@
 
 # ============================================================================ #
 # Part of:
-# "Whole-system multidimensional financial time series prediction and simulation
-# from timestamped prices only"
+# "The Stock Transformer: whole-system multidimensional financial time series
+# forecasting from timestamped prices via stacked self-attention"
 #
 # Davide Roznowicz, Emanuele Ballarin <emanuele@ballarin.cc>
 #
@@ -57,15 +57,9 @@ class StockDataset(Dataset):
         financial_np = np.load(data_path + "/financial.npy")
         contextual_np = np.load(data_path + "/contextual.npy")
 
-        # Convert contextual: np -> torch
-        contextual: Tensor = th.from_numpy(contextual_np)
-        financial: Tensor = th.from_numpy(financial_np)
-
-        # Cast types
-        # FIXME: Avoid useless UserWarning
-        with th.no_grad():
-            contextual: Tensor = th.tensor(contextual, dtype=th.float32)
-            financial: Tensor = th.tensor(financial, dtype=th.float32)
+        # Convert contextual: np -> torch; cast types to commonsense default
+        contextual: Tensor = th.from_numpy(contextual_np).to(dtype=th.float32)
+        financial: Tensor = th.from_numpy(financial_np).to(dtype=th.float32)
 
         # Same length for time ticks for both sub-datasets
         if contextual.shape[0] != financial.shape[0]:
@@ -166,7 +160,6 @@ class StockDataset(Dataset):
 
 
 # Dataloader dispatcher
-
 
 def stock_dataloader_dispatcher(
     data_path: Union[str, Path] = "./",
