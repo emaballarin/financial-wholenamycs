@@ -13,58 +13,63 @@
 
 # Imports
 import torch as th
-from torch.nn import MSELoss
+from torch.nn import MSELoss, ModuleList, Identity
 
 from data import stock_dataloader_dispatcher
 from architectures import StockTransformerModel
 
 from ebtorch.optim import Lookahead, RAdam
 from ebtorch.logging import AverageMeter
+from ebtorch.nn import Mish
 
 from train_utils import train_epoch
 
 from accelerate import Accelerator
 
+from torchinfo import summary
+
 # DATA:
 train_loader, test_loader, _, data_props = stock_dataloader_dispatcher(
     data_path="../data/",
-    which_financial=(0, 1, 2),
-    which_contextual=(0, 1, 2, 3, 4),
-    time_lookback=20,
-    time_predict=5,
-    window_stride=1,
-    ttsr=0.8,
-    train_bs=2,
-    test_bs=512,
+    which_financial=(range(100)),    # <-- Memory-bound
+    which_contextual=(0, 1, 2, 3),  # Whole, Year, Month, Whatever
+    time_lookback=120,              # Reasonable: 120
+    time_predict=5,                 # Almost surely in [5, 10]
+    window_stride=1,                # Different from 1 does not make sense!
+    ttsr=0.8,                       # Reasonably in [50, 90]
+    train_bs=256,                     # <-- Largest possible
+    test_bs=512,                    # Default: 512
 )
 
 # MODEL PARAMETERS:
 A = [
     (
         data_props.fin_size,
-        [1, 2],
-        [2, 4],
-        [2, 2],
-        [3, 1],
+        (1, 2),
+        (2, 2),
+        (3, 2),
+        (2, 1),
     ),
-    {"batchnorm": [True, True]},
+    {"batchnorm": True, "activation_fx": Mish()},
 ]
-B = [([12, 2, 2], 3)]
-C = [(20, 2, 10), {"batch_first": True}]
+B = [([200, 400, 80], 16), {"batchnorm": True, "activation_fx": Mish()}]
+C = [(220, 2, 2048), {"activation": "gelu", "batch_first": True}]
 D = [
     (),
-    {"encoder_layer": "_", "num_layers": 2},
+    {"encoder_layer": "_", "num_layers": 10},
 ]
-E = [([20 * 6, 10], 15)]
+E = [([12980, 500], 5*100), {"batchnorm": True, "activation_fx": ModuleList((Mish(), Identity()))}]
 
 F = data_props.ctx_size
 G = data_props.fin_size
 
 ################################################################################
 
-nrepochs = 2
 ACCELERATOR: bool = True
 AUTODETECT: bool = True
+DRY_VALIDATE: bool = False
+
+nrepochs = 2
 
 model = StockTransformerModel(A, B, C, D, E, F, G)
 
@@ -76,7 +81,7 @@ else:
     device = None
     accelerator = Accelerator()
 
-criterion = MSELoss(reduce=True)
+criterion = MSELoss(reduction="mean")
 optimizer = RAdam(model.parameters())   # rl, mom?, betas??
 train_acc_avgmeter = AverageMeter("Training Loss")
 
@@ -90,41 +95,50 @@ if ACCELERATOR:
 
 ################################################################################
 
-for epoch in range(1, nrepochs + 1):
+if DRY_VALIDATE:
+    for _, dry_data in enumerate(train_loader):
+        dry_x, dry_y_ = dry_data
+        dry_y = th.flatten(dry_y_, start_dim=2, end_dim=3).transpose(-1, -2)
+        break
 
-    # Training
-    print("TRAINING...")
+    print("VALIDATING...")
+    print(summary(model, input_data=dry_x))
 
-    train_epoch(
-        model=model,
-        device=device,
-        train_loader=train_loader,
-        loss_fn=criterion,
-        optimizer=optimizer,
-        epoch=epoch,
-        print_every_nep=1,
-        train_acc_avgmeter=train_acc_avgmeter,
-        inner_scheduler=None,
-        accelerator=accelerator,
-        quiet=False,
-    )
+else:
+    for epoch in range(1, nrepochs + 1):
 
-    # # Tweaks for the Lookahead optimizer (before testing)
-    # if isinstance(optimizer, Lookahead):
-    #     optimizer._backup_and_load_cache()
+        # Training
+        print("TRAINING...")
 
-    # Testing: on training and testing set
-    #    print("TESTING...")
-    #    print("\nON TRAINING SET:")
-    #    _ = test(model, device, test_on_train_loader, lossfn, quiet=False)
-    #    print("\nON TEST SET:")
-    #    _ = test(model, device, test_loader, lossfn, quiet=False)
-    #    print("\n\n")
+        train_epoch(
+            model=model,
+            device=device,
+            train_loader=train_loader,
+            loss_fn=criterion,
+            optimizer=optimizer,
+            epoch=epoch,
+            print_every_nep=1,
+            train_acc_avgmeter=train_acc_avgmeter,
+            inner_scheduler=None,
+            accelerator=accelerator,
+            quiet=False,
+        )
 
-    # # Tweaks for the Lookahead optimizer (after testing)
-    # if isinstance(optimizer, Lookahead):
-    #     optimizer._clear_and_load_backup()
+        # # Tweaks for the Lookahead optimizer (before testing)
+        # if isinstance(optimizer, Lookahead):
+        #     optimizer._backup_and_load_cache()
 
-    # Scheduling step (outer)
-    # scheduler.step()
- 
+        # Testing: on training and testing set
+        #    print("TESTING...")
+        #    print("\nON TRAINING SET:")
+        #    _ = test(model, device, test_on_train_loader, lossfn, quiet=False)
+        #    print("\nON TEST SET:")
+        #    _ = test(model, device, test_loader, lossfn, quiet=False)
+        #    print("\n\n")
+
+        # # Tweaks for the Lookahead optimizer (after testing)
+        # if isinstance(optimizer, Lookahead):
+        #     optimizer._clear_and_load_backup()
+
+        # Scheduling step (outer)
+        # scheduler.step()
