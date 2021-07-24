@@ -60,7 +60,7 @@ def train_epoch(
                     batch_idx * len(data),
                     len(train_loader.dataset),
                     100.0 * batch_idx / len(train_loader),
-                    train_acc_avgmeter.name
+                    train_acc_avgmeter.name,
                     train_acc_avgmeter.avg,
                 )
             )
