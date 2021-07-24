@@ -32,15 +32,15 @@ from torchinfo import summary
 # DATA:
 train_loader, test_loader, totr_loader, data_props = stock_dataloader_dispatcher(
     data_path="../data/",
-    which_financial=(range(97)),    # <-- Memory-bound
-    which_contextual=(0, 1, 2),     # Whole, Year, Month
-    time_lookback=30,               # Reasonable: 30
+    which_financial=(range(100)),    # <-- Memory-bound
+    which_contextual=(0, 1, 2, 3),  # Whole, Year, Month, Whatever
+    time_lookback=120,              # Reasonable: 120
     time_predict=5,                 # Almost surely in [5, 10]
     window_stride=1,                # Different from 1 does not make sense!
-    ttsr=0.9,                       # Reasonably in [0.5, 0.9]
-    train_bs=128,                   #
+    ttsr=0.8,                       # Reasonably in [.5, .9]
+    train_bs=254,                   #
     test_bs=512,                    # Default: 512
-    shuffle_train=False             # Tame overfitting to our advantage! :)
+    shuffle_train=True
 )
 
 # MODEL PARAMETERS:
@@ -84,7 +84,7 @@ else:
     accelerator = Accelerator()
 
 criterion = MSELoss(reduction="mean")
-optimizer = RAdam(model.parameters())   # rl, mom?, betas??
+optimizer = RAdam(model.parameters(), lr=0.1)   # rl, mom?, betas??
 
 train_acc_avgmeter = AverageMeter("batchwise training loss")
 test_acc_avgmeter = AverageMeter("epochwise testing loss")

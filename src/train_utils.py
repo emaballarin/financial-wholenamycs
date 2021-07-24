@@ -55,11 +55,12 @@ def train_epoch(
 
         if not quiet and batch_idx % print_every_nep == 0:
             print(
-                "Train Epoch: {} [{}/{} ({:.0f}%)]\tAvg. loss: {:.6f}".format(
+                "Train Epoch: {} [{}/{} ({:.0f}%)]\tAverage {}: {:.6f}".format(
                     epoch,
                     batch_idx * len(data),
                     len(train_loader.dataset),
                     100.0 * batch_idx / len(train_loader),
+                    train_acc_avgmeter.name
                     train_acc_avgmeter.avg,
                 )
             )
@@ -84,5 +85,5 @@ def test(model, device, test_loader, loss_fn, test_acc_avgmeter, quiet=False):
             test_acc_avgmeter.update(loss.item())
 
     if not quiet:
-        print("Average loss: {:.4f})".format(test_acc_avgmeter.avg))
+        print("Average {}: {:.4f}".format(test_acc_avgmeter.name, test_acc_avgmeter.avg))
     return test_acc_avgmeter.avg

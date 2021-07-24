@@ -171,6 +171,7 @@ def stock_dataloader_dispatcher(
     ttsr: float = 0.8,
     train_bs: int = 32,
     test_bs: int = 512,
+    shuffle_train: bool = True
 ):
     train_ds = StockDataset(
         data_path,
@@ -192,7 +193,7 @@ def stock_dataloader_dispatcher(
         False,
         ttsr,
     )
-    train_dl = DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True)
+    train_dl = DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=shuffle_train)
     test_dl = DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False)
     totr_dl = DataLoader(dataset=train_ds, batch_size=test_bs, shuffle=False)
 
