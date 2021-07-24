@@ -107,6 +107,8 @@ class ConvFeaturizer1d(nn.Module):
         ):
             for _ in range(len(in_channels)):
                 self.activation_fx.append(copy.deepcopy(activation_fx))
+        elif isinstance(activation_fx, nn.ModuleList):
+            self.activation_fx = copy.deepcopy(activation_fx)
 
         if (
             not len(in_channels)

@@ -33,12 +33,12 @@ from torchinfo import summary
 train_loader, test_loader, totr_loader, data_props = stock_dataloader_dispatcher(
     data_path="../data/",
     which_financial=(range(97)),    # <-- Memory-bound
-    which_contextual=(0, 1, 2, 3),  # Whole, Year, Month
+    which_contextual=(0, 1, 2, 3),  # Whole, Year, Month, Whatever
     time_lookback=30,               # Reasonable: 30
     time_predict=5,                 # Almost surely in [5, 10]
     window_stride=1,                # Different from 1 does not make sense!
     ttsr=0.9,                       # Reasonably in [0.5, 0.9]
-    train_bs=32,                   #
+    train_bs=32,                    # Start at 32 (Luschi e Masters)
     test_bs=512,                    # Default: 512
     shuffle_train=False             # Tame overfitting to our advantage! :)
 )
@@ -47,12 +47,12 @@ train_loader, test_loader, totr_loader, data_props = stock_dataloader_dispatcher
 A = [
     (
         data_props.fin_size,
-        (1, 150),
-        (150, 2),
+        (1, 200),
+        (200, 2),
         (5, 4),
         (1, 1),
     ),
-    {"batchnorm": True, "causal": False, "activation_fx": Mish()},
+    {"batchnorm": True, "causal": (False, False), "activation_fx": Mish()},
 ]
 B = [([194, 100, 50], 16), {"batchnorm": True, "activation_fx": Mish()}]
 C = [(214, 2, 512), {"activation": "gelu", "batch_first": True}]
@@ -71,7 +71,7 @@ ACCELERATOR: bool = False
 AUTODETECT: bool = True
 DRY_VALIDATE: bool = False
 
-nrepochs = 200
+nrepochs = 125
 
 model = StockTransformerModel(A, B, C, D, E, F, G)
 
@@ -101,7 +101,7 @@ base_optimizer = optimizer
 optimizer = Lookahead(base_optimizer, la_steps=3)   # la_steps? (e.g. 5->4)
 
 # SCHEDULING:
-sched_milestones=[15, 20, 25, 30]
+sched_milestones=[15, 25, 35, 45, 55, 65, 75, 85, 95]
 sched_gamma=0.5
 
 if not isinstance(optimizer, Lookahead):
