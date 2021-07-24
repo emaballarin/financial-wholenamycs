@@ -13,7 +13,7 @@
 
 # Imports
 import torch as th
-from torch.nn import MSELoss, ModuleList, Identity
+from torch.nn import MSELoss, ModuleList, Identity, L1Loss, Tanh
 from torch.optim.lr_scheduler import MultiStepLR
 
 from data import stock_dataloader_dispatcher
@@ -21,7 +21,7 @@ from architectures import StockTransformerModel
 
 from ebtorch.optim import Lookahead, RAdam
 from ebtorch.logging import AverageMeter
-from ebtorch.nn import Mish
+from ebtorch.nn import Mish, mishlayer_init
 
 from train_utils import train_epoch, test
 
@@ -33,12 +33,12 @@ from torchinfo import summary
 train_loader, test_loader, totr_loader, data_props = stock_dataloader_dispatcher(
     data_path="../data/",
     which_financial=(range(97)),    # <-- Memory-bound
-    which_contextual=(0, 1, 2),     # Whole, Year, Month
+    which_contextual=(0, 1, 2, 3),  # Whole, Year, Month
     time_lookback=30,               # Reasonable: 30
     time_predict=5,                 # Almost surely in [5, 10]
     window_stride=1,                # Different from 1 does not make sense!
     ttsr=0.9,                       # Reasonably in [0.5, 0.9]
-    train_bs=128,                   #
+    train_bs=32,                   #
     test_bs=512,                    # Default: 512
     shuffle_train=False             # Tame overfitting to our advantage! :)
 )
@@ -47,20 +47,20 @@ train_loader, test_loader, totr_loader, data_props = stock_dataloader_dispatcher
 A = [
     (
         data_props.fin_size,
-        (1, 2),
-        (2, 2),
-        (3, 2),
-        (2, 1),
+        (1, 150),
+        (150, 2),
+        (5, 4),
+        (1, 1),
     ),
-    {"batchnorm": True, "activation_fx": Mish()},
+    {"batchnorm": True, "causal": False, "activation_fx": Mish()},
 ]
-B = [([200, 400, 80], 16), {"batchnorm": True, "activation_fx": Mish()}]
-C = [(220, 2, 2048), {"activation": "gelu", "batch_first": True}]
+B = [([194, 100, 50], 16), {"batchnorm": True, "activation_fx": Mish()}]
+C = [(214, 2, 512), {"activation": "gelu", "batch_first": True}]
 D = [
     (),
-    {"encoder_layer": "_", "num_layers": 10},
+    {"encoder_layer": "_", "num_layers": 3},
 ]
-E = [([12980, 500], 5*100), {"batchnorm": True, "activation_fx": ModuleList((Mish(), Identity()))}]
+E = [([4922], 5*97), {"batchnorm": False, "activation_fx": Tanh()}]
 
 F = data_props.ctx_size
 G = data_props.fin_size
@@ -75,6 +75,12 @@ nrepochs = 200
 
 model = StockTransformerModel(A, B, C, D, E, F, G)
 
+# Weights initialization
+for submodel in (model.conv_featurizer, model.mlp_correlator):
+    for layr in submodel.modules():
+        mishlayer_init(layr)
+
+
 if not ACCELERATOR:
     device = th.device("cuda" if th.cuda.is_available() and AUTODETECT else "cpu")
     model = model.to(device)
@@ -83,7 +89,8 @@ else:
     device = None
     accelerator = Accelerator()
 
-criterion = MSELoss(reduction="mean")
+#criterion = MSELoss(reduction="mean")
+criterion = L1Loss(reduction="mean")
 optimizer = RAdam(model.parameters())   # rl, mom?, betas??
 
 train_acc_avgmeter = AverageMeter("batchwise training loss")
@@ -91,11 +98,11 @@ test_acc_avgmeter = AverageMeter("epochwise testing loss")
 totr_acc_avgmeter = AverageMeter("epochwise training loss")
 
 base_optimizer = optimizer
-optimizer = Lookahead(base_optimizer, la_steps=4)   # la_steps? (e.g. 5->4)
+optimizer = Lookahead(base_optimizer, la_steps=3)   # la_steps? (e.g. 5->4)
 
 # SCHEDULING:
-sched_milestones=[10, 11]
-sched_gamma=0.1
+sched_milestones=[15, 20, 25, 30]
+sched_gamma=0.5
 
 if not isinstance(optimizer, Lookahead):
     scheduler = MultiStepLR(optimizer, milestones=sched_milestones, gamma=sched_gamma)
@@ -129,7 +136,7 @@ else:
             loss_fn=criterion,
             optimizer=optimizer,
             epoch=epoch,
-            print_every_nep=1,
+            print_every_nep=15,
             train_acc_avgmeter=train_acc_avgmeter,
             inner_scheduler=None,
             accelerator=accelerator,
