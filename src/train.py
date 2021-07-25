@@ -33,7 +33,7 @@ from torchinfo import summary
 train_loader, test_loader, totr_loader, data_props = stock_dataloader_dispatcher(
     data_path="../data/",
     which_financial=(range(97)),    # <-- Memory-bound
-    which_contextual=(0, 1, 2, 3),  # Whole, Year, Month, Whatever
+    which_contextual=(0, 1, 2),     # Whole, Year, Month, Whatever
     time_lookback=30,               # Reasonable: 30
     time_predict=5,                 # Almost surely in [5, 10]
     window_stride=1,                # Different from 1 does not make sense!
@@ -47,20 +47,20 @@ train_loader, test_loader, totr_loader, data_props = stock_dataloader_dispatcher
 A = [
     (
         data_props.fin_size,
-        (1, 200),
-        (200, 2),
-        (5, 4),
-        (1, 1),
+        (1, 250),
+        (250, 3),
+        (5, 5),
+        (1, 3),
     ),
-    {"batchnorm": True, "causal": (False, False), "activation_fx": Mish()},
+    {"batchnorm": True, "causal": False, "activation_fx": Mish()},
 ]
-B = [([194, 100, 50], 16), {"batchnorm": True, "activation_fx": Mish()}]
-C = [(214, 2, 512), {"activation": "gelu", "batch_first": True}]
+B = [([291, 100, 50], 16), {"batchnorm": True, "activation_fx": Mish()}]
+C = [(310, 2, 512), {"activation": "gelu", "batch_first": True}]
 D = [
     (),
     {"encoder_layer": "_", "num_layers": 3},
 ]
-E = [([4922], 5*97), {"batchnorm": False, "activation_fx": Tanh()}]
+E = [([2480], 5*97), {"batchnorm": False, "activation_fx": Tanh()}]
 
 F = data_props.ctx_size
 G = data_props.fin_size
@@ -71,12 +71,12 @@ ACCELERATOR: bool = False
 AUTODETECT: bool = True
 DRY_VALIDATE: bool = False
 
-nrepochs = 125
+nrepochs = 70
 
 model = StockTransformerModel(A, B, C, D, E, F, G)
 
 # Weights initialization
-for submodel in (model.conv_featurizer, model.mlp_correlator):
+for submodel in (model.conv_featurizer, model.mlp_correlator, model.decoder):
     for layr in submodel.modules():
         mishlayer_init(layr)
 
@@ -91,17 +91,17 @@ else:
 
 #criterion = MSELoss(reduction="mean")
 criterion = L1Loss(reduction="mean")
-optimizer = RAdam(model.parameters())   # rl, mom?, betas??
+optimizer = RAdam(model.parameters(), lr=4e-3)
 
 train_acc_avgmeter = AverageMeter("batchwise training loss")
 test_acc_avgmeter = AverageMeter("epochwise testing loss")
 totr_acc_avgmeter = AverageMeter("epochwise training loss")
 
 base_optimizer = optimizer
-optimizer = Lookahead(base_optimizer, la_steps=3)   # la_steps? (e.g. 5->4)
+optimizer = Lookahead(base_optimizer, la_steps=3)   # la_steps
 
 # SCHEDULING:
-sched_milestones=[15, 25, 35, 45, 55, 65, 75, 85, 95]
+sched_milestones=[2, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
 sched_gamma=0.5
 
 if not isinstance(optimizer, Lookahead):
